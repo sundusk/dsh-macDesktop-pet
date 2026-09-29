@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// 状态展示面板：选择一个状态，实时展示对应颜色的小球（真实渲染、静态满状态），
+/// 状态展示面板：选择桌宠和状态，展示对应外观，
 /// 可切换显示/隐藏气泡文字，方便逐个状态截图用于 README 等文档。
 struct StatePreviewPanelView: View {
     @ObservedObject private var settings = SettingsStore.shared
@@ -20,7 +20,8 @@ struct StatePreviewPanelView: View {
     ]
 
     @State private var selectedMood = "idle"
-    /// 是否在球上方显示气泡文字（默认关，便于截图纯球）
+    @State private var selectedSkin = SettingsStore.shared.skin
+    /// 是否在桌宠上方显示气泡文字（默认关，便于截图）
     @State private var showText = false
     /// 导出 PNG 的反馈信息
     @State private var exportMessage: String?
@@ -54,14 +55,13 @@ struct StatePreviewPanelView: View {
         return settings.moodColors[mood] ?? Color(hex: 0x60a5fa)
     }
 
-    /// 导出当前状态的小球为固定 512×512 透明背景 PNG（真实渲染，尺寸一致，免截图裁剪）。
+    /// 导出当前状态的桌宠为固定 512×512 透明背景 PNG。
     /// 「显示文字」打开时，气泡会一并导出。
     private func exportPNG() {
         let mood = selectedMood
         let color = selectedColor
         let text = previewBubbleText
-        // 固定画布：球 280px，光晕 1.7×280=476px 完整落在 512 画布内；气泡随组合渲染
-        let canvas = BallWithBubble(mood: mood, color: color, size: 280, text: text)
+        let canvas = PetWithBubble(skin: selectedSkin, mood: mood, color: color, size: 280, text: text)
             .frame(width: 512, height: 512)
             .clipped()
 
@@ -76,10 +76,11 @@ struct StatePreviewPanelView: View {
         }
         let dir = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let url = dir.appendingPathComponent("moodball-\(mood).png")
+        let filename = "\(selectedSkin == .xiaoyu ? "xiaoyu" : "moodball")-\(mood).png"
+        let url = dir.appendingPathComponent(filename)
         do {
             try png.write(to: url)
-            exportMessage = "已保存：桌面/moodball-\(mood).png"
+            exportMessage = "已保存：桌面/\(filename)"
         } catch {
             exportMessage = "保存失败：\(error.localizedDescription)"
         }
@@ -87,10 +88,17 @@ struct StatePreviewPanelView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // 小球展示区：浅色底便于截图，球与真实渲染一致；可选气泡文字
+            Picker("桌宠", selection: $selectedSkin) {
+                ForEach(FloatingPetSkin.allCases) { skin in
+                    Text(skin.label).tag(skin)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            // 桌宠展示区：可选气泡文字
             ZStack {
                 Color.black.opacity(0.05)
-                BallWithBubble(mood: selectedMood, color: selectedColor, size: 130, text: previewBubbleText)
+                PetWithBubble(skin: selectedSkin, mood: selectedMood, color: selectedColor, size: 130, text: previewBubbleText)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 300)
@@ -149,9 +157,11 @@ struct StatePreviewPanelView: View {
     }
 }
 
-/// 球 + 可选气泡的组合（与真实 app 布局一致：气泡尾巴尖端贴球顶，间距 = tailGap）。
+/// 桌宠 + 可选气泡的组合。
 /// 预览（130px）与导出 PNG（280px）共用，保证所见即所存。
-private struct BallWithBubble: View {
+private struct PetWithBubble: View {
+    @ObservedObject private var settings = SettingsStore.shared
+    let skin: FloatingPetSkin
     let mood: String
     let color: Color
     let size: CGFloat
@@ -159,10 +169,22 @@ private struct BallWithBubble: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            StateBallPreview(mood: mood, color: color, size: size)
+            if skin == .xiaoyu {
+                XiaoyuSpriteView(
+                    mood: mood,
+                    color: color,
+                    size: size,
+                    glowEnabled: settings.glowEnabled,
+                    interactionTriggeredAt: nil,
+                    dragDirection: nil
+                )
+            } else {
+                StateBallPreview(mood: mood, color: color, size: size)
+            }
             if let text {
                 SpeechBubble(text: text, color: color)
-                    .offset(y: size / 2 - MoodBallView.bubbleHeight - MoodBallView.tailGap)
+                    .offset(y: size * (skin == .xiaoyu ? (settings.glowEnabled ? 0.55 : 0.10) : 0.5)
+                        - MoodBallView.bubbleHeight - MoodBallView.tailGap)
             }
         }
     }

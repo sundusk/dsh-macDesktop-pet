@@ -113,7 +113,7 @@ enum XiaoyuAnimation: String, CaseIterable {
     static func animation(for mood: String) -> XiaoyuAnimation {
         switch mood {
         case "idle": return .idle
-        case "waiting": return .waiting
+        case "waiting", "jumping": return .waiting
         case "authorizing": return .authorizing
         case "questioning": return .questioning
         case "done": return .done

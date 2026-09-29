@@ -3,6 +3,10 @@ import XCTest
 
 @MainActor
 final class PetSettingsVisibilityTests: XCTestCase {
+    func testXiaoyuUsesWorkingAnimationForToolCalls() {
+        XCTAssertEqual(XiaoyuAnimation.animation(for: "jumping"), .waiting)
+    }
+
     func testPetVisibilityMigratesAndCanBeShownAgain() {
         let suite = "MoodBallTests.PetVisibility.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

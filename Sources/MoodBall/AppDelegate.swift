@@ -880,21 +880,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(togglePetMenuItem!)
 
         menu.addItem(makeShortcutMenuItem(
-            action: .inputMessage,
-            title: "输入消息",
-            selector: #selector(inputMessageFromMenu)
-        ))
-        menu.addItem(makeShortcutMenuItem(
-            action: .newSession,
-            title: "新建会话",
-            selector: #selector(newSessionFromMenu)
-        ))
-        menu.addItem(makeShortcutMenuItem(
-            action: .selectWorkspace,
-            title: "选择工作区",
-            selector: #selector(selectWorkspaceFromMenu)
-        ))
-        menu.addItem(makeShortcutMenuItem(
             action: .openHarness,
             title: "打开 Harness",
             selector: #selector(openHarnessFromMenu)
